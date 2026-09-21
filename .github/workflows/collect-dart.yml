@@ -5,7 +5,11 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: dart-financial-data
+  cancel-in-progress: false
 
 jobs:
   collect:
@@ -28,12 +32,32 @@ jobs:
       - name: Analyze financial data
         run: python scripts/analyze_financials.py
 
-      - name: Upload financial results
-        uses: actions/upload-artifact@v4
-        with:
-          name: hyundai-financial-data
-          path: |
-            data/financial_summary.csv
-            data/financial_ratios.csv
-          if-no-files-found: error
-          retention-days: 7
+      - name: Save financial data and analysis
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add data/
+
+          if git diff --cached --quiet; then
+            echo "No new data to save."
+            exit 0
+          fi
+
+          git commit -m "Update Hyundai E&C financial analysis"
+
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git rebase origin/main
+
+            if git push origin HEAD:main; then
+              echo "Financial data saved successfully."
+              exit 0
+            fi
+
+            echo "Push attempt failed. Retrying..."
+            sleep 5
+          done
+
+          echo "Unable to save data after 5 attempts."
+          exit 1
