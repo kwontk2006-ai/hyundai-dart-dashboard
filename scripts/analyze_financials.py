@@ -159,13 +159,22 @@ def extract_year(year):
 
     records = document.get("list", [])
 
-    # 연결재무제표 여부 확인
-    if not records or any(
-        row.get("fs_div") != "CFS" for row in records
+   
+    # 재무제표 데이터가 비어 있는지 확인
+    if not records:
+        raise RuntimeError(
+            f"{year}년 재무제표 데이터가 비어 있습니다."
+        )
+
+    # fs_div 필드가 있는 경우에만 연결재무제표 여부 확인
+    if any(
+        row.get("fs_div") not in (None, "CFS")
+        for row in records
     ):
         raise RuntimeError(
-            f"{year}년 연결재무제표 확인 실패"
+            f"{year}년 다른 재무제표 구분이 포함되어 있습니다."
         )
+  
 
     result = {"year": year}
 
