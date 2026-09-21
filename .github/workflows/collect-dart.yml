@@ -1,3 +1,4 @@
+
 name: Collect and Analyze DART Financial Data
 
 on:
@@ -5,6 +6,10 @@ on:
 
 permissions:
   contents: write
+
+concurrency:
+  group: dart-financial-data
+  cancel-in-progress: false
 
 jobs:
   collect:
@@ -34,8 +39,25 @@ jobs:
 
           git add data/
 
-          if ! git diff --cached --quiet; then
-            git commit -m "Update Hyundai E&C financial analysis"
-            git pull --rebase origin main
-            git push origin HEAD:main
+          if git diff --cached --quiet; then
+            echo "No new data to save."
+            exit 0
           fi
+
+          git commit -m "Update Hyundai E&C financial analysis"
+
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git rebase origin/main
+
+            if git push origin HEAD:main; then
+              echo "Financial data saved successfully."
+              exit 0
+            fi
+
+            echo "Push attempt failed. Retrying..."
+            sleep 5
+          done
+
+          echo "Unable to save data after 5 attempts."
+          exit 1
