@@ -1,5 +1,5 @@
 
-name: Collect DART Financial Data
+name: Collect and Analyze DART Financial Data
 
 on:
   workflow_dispatch:
@@ -25,12 +25,17 @@ jobs:
           DART_API_KEY: ${{ secrets.DART_API_KEY }}
         run: python scripts/fetch_dart.py
 
-      - name: Save financial data to GitHub
+      - name: Analyze financial data
+        run: python scripts/analyze_financials.py
+
+      - name: Save financial data and analysis
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/financial_*.json
+
+          git add data/
+
           if ! git diff --cached --quiet; then
-            git commit -m "Add Hyundai E&C DART financial data"
+            git commit -m "Update Hyundai E&C financial analysis"
             git push
           fi
